@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import styled from "styled-components"
-import api from "../../services/api"
+import api from "../../../Services/api"
 
 const PageContainer = styled.div`
   max-width: 800px;
@@ -40,7 +40,7 @@ const Input = styled.input`
   border: 1px solid var(--gray-light);
   border-radius: var(--radius);
   font-size: 1rem;
-  
+
   &:focus {
     outline: none;
     border-color: var(--primary);
@@ -55,7 +55,7 @@ const Textarea = styled.textarea`
   font-size: 1rem;
   min-height: 150px;
   resize: vertical;
-  
+
   &:focus {
     outline: none;
     border-color: var(--primary);
@@ -69,7 +69,7 @@ const Select = styled.select`
   border-radius: var(--radius);
   font-size: 1rem;
   background-color: white;
-  
+
   &:focus {
     outline: none;
     border-color: var(--primary);
@@ -90,11 +90,11 @@ const SubmitButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
-  
+
   &:hover {
     background-color: var(--primary-light);
   }
-  
+
   &:disabled {
     background-color: var(--gray);
     cursor: not-allowed;
@@ -112,7 +112,7 @@ const CancelButton = styled.button`
   cursor: pointer;
   transition: var(--transition);
   margin-right: 1rem;
-  
+
   &:hover {
     background-color: var(--neutral-light);
   }
@@ -136,7 +136,7 @@ const HelpText = styled.div`
 
 const ImagePreview = styled.div`
   margin-top: 1rem;
-  
+
   img {
     max-width: 100%;
     max-height: 200px;
@@ -164,13 +164,15 @@ const SubmitComplaint = () => {
   useEffect(() => {
     const fetchFormData = async () => {
       try {
-        // Fetch categories
         const categoriesResponse = await api.get("/api/categories")
-        setCategories(categoriesResponse.data)
-
-        // Fetch locations
         const locationsResponse = await api.get("/api/locations")
-        setLocations(locationsResponse.data)
+
+        // Debugging: check response shape
+        console.log("Categories response:", categoriesResponse.data)
+        console.log("Locations response:", locationsResponse.data)
+
+        setCategories(Array.isArray(categoriesResponse.data) ? categoriesResponse.data : [])
+        setLocations(Array.isArray(locationsResponse.data) ? locationsResponse.data : [])
       } catch (error) {
         console.error("Error fetching form data:", error)
         setError("Failed to load form data. Please try again.")
@@ -196,7 +198,6 @@ const SubmitComplaint = () => {
         image: file,
       })
 
-      // Create image preview
       const reader = new FileReader()
       reader.onloadend = () => {
         setImagePreview(reader.result)
@@ -217,7 +218,6 @@ const SubmitComplaint = () => {
       setLoading(true)
       setError("")
 
-      // Create FormData object for file upload
       const submitData = new FormData()
       submitData.append("title", formData.title)
       submitData.append("description", formData.description)
@@ -234,7 +234,6 @@ const SubmitComplaint = () => {
         },
       })
 
-      // Redirect to complaints list
       navigate("/citizen/my-complaints", {
         state: { message: "Complaint submitted successfully!" },
       })
@@ -275,11 +274,12 @@ const SubmitComplaint = () => {
             <Label htmlFor="category">Category*</Label>
             <Select id="category" name="category" value={formData.category} onChange={handleChange} required>
               <option value="">Select a category</option>
-              {categories.map((category) => (
-                <option key={category._id} value={category._id}>
-                  {category.name}
-                </option>
-              ))}
+              {Array.isArray(categories) &&
+                categories.map((category) => (
+                  <option key={category._id} value={category._id}>
+                    {category.name}
+                  </option>
+                ))}
             </Select>
           </FormGroup>
 
@@ -287,11 +287,12 @@ const SubmitComplaint = () => {
             <Label htmlFor="location">Location</Label>
             <Select id="location" name="location" value={formData.location} onChange={handleChange}>
               <option value="">Select a location</option>
-              {locations.map((location) => (
-                <option key={location._id} value={location._id}>
-                  {location.name}
-                </option>
-              ))}
+              {Array.isArray(locations) &&
+                locations.map((location) => (
+                  <option key={location._id} value={location._id}>
+                    {location.name}
+                  </option>
+                ))}
             </Select>
           </FormGroup>
 
@@ -317,7 +318,7 @@ const SubmitComplaint = () => {
 
             {imagePreview && (
               <ImagePreview>
-                <img src={imagePreview || "/placeholder.svg"} alt="Preview" />
+                <img src={imagePreview} alt="Preview" />
               </ImagePreview>
             )}
           </FormGroup>

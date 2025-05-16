@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Link, useLocation } from "react-router-dom"
 import styled from "styled-components"
-import api from "../../services/api"
+import api from "../../../Services/api"
 
+// Styled Components (no changes needed in this section)
 const PageContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
@@ -16,7 +17,7 @@ const PageHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
@@ -36,7 +37,7 @@ const ActionButton = styled(Link)`
   border-radius: var(--radius);
   font-weight: 600;
   transition: var(--transition);
-  
+
   &:hover {
     background-color: var(--primary-light);
     transform: translateY(-2px);
@@ -52,7 +53,7 @@ const FiltersContainer = styled.div`
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
   }
@@ -76,7 +77,7 @@ const FilterSelect = styled.select`
   border-radius: var(--radius);
   font-size: 1rem;
   background-color: white;
-  
+
   &:focus {
     outline: none;
     border-color: var(--primary);
@@ -93,7 +94,7 @@ const ComplaintsTable = styled.div`
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  
+
   @media (max-width: 768px) {
     display: block;
     overflow-x: auto;
@@ -102,7 +103,7 @@ const Table = styled.table`
 
 const TableHead = styled.thead`
   background-color: var(--neutral-light);
-  
+
   th {
     padding: 1rem;
     text-align: left;
@@ -114,16 +115,16 @@ const TableHead = styled.thead`
 const TableBody = styled.tbody`
   tr {
     border-bottom: 1px solid var(--gray-light);
-    
+
     &:last-child {
       border-bottom: none;
     }
-    
+
     &:hover {
       background-color: var(--neutral-light);
     }
   }
-  
+
   td {
     padding: 1rem;
   }
@@ -136,30 +137,20 @@ const StatusBadge = styled.span`
   font-weight: 600;
   background-color: ${({ status }) => {
     switch (status) {
-      case "pending":
-        return "rgba(236, 201, 75, 0.2)"
-      case "in-progress":
-        return "rgba(66, 153, 225, 0.2)"
-      case "resolved":
-        return "rgba(56, 161, 105, 0.2)"
-      case "rejected":
-        return "rgba(229, 62, 62, 0.2)"
-      default:
-        return "rgba(113, 128, 150, 0.2)"
+      case "pending": return "rgba(236, 201, 75, 0.2)";
+      case "in-progress": return "rgba(66, 153, 225, 0.2)";
+      case "resolved": return "rgba(56, 161, 105, 0.2)";
+      case "rejected": return "rgba(229, 62, 62, 0.2)";
+      default: return "rgba(113, 128, 150, 0.2)";
     }
   }};
   color: ${({ status }) => {
     switch (status) {
-      case "pending":
-        return "var(--warning)"
-      case "in-progress":
-        return "var(--info)"
-      case "resolved":
-        return "var(--success)"
-      case "rejected":
-        return "var(--danger)"
-      default:
-        return "var(--gray)"
+      case "pending": return "var(--warning)";
+      case "in-progress": return "var(--info)";
+      case "resolved": return "var(--success)";
+      case "rejected": return "var(--danger)";
+      default: return "var(--gray)";
     }
   }};
 `
@@ -172,7 +163,7 @@ const ViewButton = styled(Link)`
   border-radius: var(--radius);
   font-size: 0.9rem;
   transition: var(--transition);
-  
+
   &:hover {
     background-color: var(--primary-light);
   }
@@ -199,11 +190,11 @@ const PageButton = styled.button`
   border-radius: var(--radius);
   cursor: pointer;
   transition: var(--transition);
-  
+
   &:hover {
     background-color: ${({ active }) => (active ? "var(--primary-light)" : "var(--neutral-light)")};
   }
-  
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -219,93 +210,73 @@ const SuccessMessage = styled.div`
   border-left: 4px solid var(--success);
 `
 
+// ✅ Component Starts
 const MyComplaints = () => {
   const [complaints, setComplaints] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState({
-    status: "",
-    category: "",
-    date: "",
-  })
+  const [filters, setFilters] = useState({ status: "", category: "", date: "" })
   const [categories, setCategories] = useState([])
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0,
-  })
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 })
 
   const location = useLocation()
   const successMessage = location.state?.message
 
+  // ✅ Fetch categories safely
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const response = await api.get("/api/categories")
-        setCategories(response.data)
+        const categoryData = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data.categories)
+          ? response.data.categories
+          : []
+
+        setCategories(categoryData)
       } catch (error) {
         console.error("Error fetching categories:", error)
+        setCategories([]) // fallback to empty array
       }
     }
 
     fetchCategories()
   }, [])
 
-  useEffect(() => {
-    const fetchComplaints = async () => {
-      try {
-        setLoading(true)
+  // ✅ Fetch complaints with pagination and filters
+  const fetchComplaints = useCallback(async () => {
+    try {
+      setLoading(true)
+      const params = { page: pagination.page, limit: pagination.limit, ...filters }
+      const response = await api.get("/api/complaints/my-complaints", { params })
 
-        const params = {
-          page: pagination.page,
-          limit: pagination.limit,
-          ...filters,
-        }
-
-        const response = await api.get("/api/complaints/my-complaints", { params })
-
-        setComplaints(response.data.complaints)
-        setPagination({
-          ...pagination,
-          total: response.data.total,
-          totalPages: response.data.totalPages,
-        })
-      } catch (error) {
-        console.error("Error fetching complaints:", error)
-      } finally {
-        setLoading(false)
-      }
+      setComplaints(response.data.complaints)
+      setPagination(prev => ({
+        ...prev,
+        total: response.data.total,
+        totalPages: response.data.totalPages,
+      }))
+    } catch (error) {
+      console.error("Error fetching complaints:", error)
+    } finally {
+      setLoading(false)
     }
+  }, [filters, pagination.page, pagination.limit])
 
+  useEffect(() => {
     fetchComplaints()
-  }, [filters, pagination.page, pagination.limit, pagination])
+  }, [fetchComplaints])
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target
-
-    setFilters({
-      ...filters,
-      [name]: value,
-    })
-
-    // Reset to first page when filters change
-    setPagination({
-      ...pagination,
-      page: 1,
-    })
+    setFilters((prev) => ({ ...prev, [name]: value }))
+    setPagination((prev) => ({ ...prev, page: 1 }))
   }
 
   const handlePageChange = (page) => {
-    setPagination({
-      ...pagination,
-      page,
-    })
+    setPagination((prev) => ({ ...prev, page }))
   }
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString()
-  }
+  const formatDate = (dateString) => new Date(dateString).toLocaleDateString()
 
   return (
     <PageContainer>
@@ -332,10 +303,8 @@ const MyComplaints = () => {
           <FilterLabel htmlFor="category">Category</FilterLabel>
           <FilterSelect id="category" name="category" value={filters.category} onChange={handleFilterChange}>
             <option value="">All Categories</option>
-            {categories.map((category) => (
-              <option key={category._id} value={category._id}>
-                {category.name}
-              </option>
+            {Array.isArray(categories) && categories.map((category) => (
+              <option key={category._id} value={category._id}>{category.name}</option>
             ))}
           </FilterSelect>
         </FilterGroup>
@@ -372,7 +341,7 @@ const MyComplaints = () => {
                 <tr key={complaint._id}>
                   <td>#{complaint.complaintId}</td>
                   <td>{complaint.title}</td>
-                  <td>{complaint.category.name}</td>
+                  <td>{complaint.category?.name || "N/A"}</td>
                   <td>{formatDate(complaint.createdAt)}</td>
                   <td>
                     <StatusBadge status={complaint.status}>
@@ -397,33 +366,21 @@ const MyComplaints = () => {
 
       {complaints.length > 0 && pagination.totalPages > 1 && (
         <Pagination>
-          <PageButton onClick={() => handlePageChange(1)} disabled={pagination.page === 1}>
-            First
-          </PageButton>
+          <PageButton onClick={() => handlePageChange(1)} disabled={pagination.page === 1}>First</PageButton>
+          <PageButton onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1}>Prev</PageButton>
 
-          <PageButton onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1}>
-            Prev
-          </PageButton>
-
-          {[...Array(pagination.totalPages).keys()].map((page) => (
-            <PageButton key={page + 1} active={pagination.page === page + 1} onClick={() => handlePageChange(page + 1)}>
-              {page + 1}
+          {[...Array(pagination.totalPages)].map((_, i) => (
+            <PageButton
+              key={i + 1}
+              active={pagination.page === i + 1}
+              onClick={() => handlePageChange(i + 1)}
+            >
+              {i + 1}
             </PageButton>
           ))}
 
-          <PageButton
-            onClick={() => handlePageChange(pagination.page + 1)}
-            disabled={pagination.page === pagination.totalPages}
-          >
-            Next
-          </PageButton>
-
-          <PageButton
-            onClick={() => handlePageChange(pagination.totalPages)}
-            disabled={pagination.page === pagination.totalPages}
-          >
-            Last
-          </PageButton>
+          <PageButton onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages}>Next</PageButton>
+          <PageButton onClick={() => handlePageChange(pagination.totalPages)} disabled={pagination.page === pagination.totalPages}>Last</PageButton>
         </Pagination>
       )}
     </PageContainer>
