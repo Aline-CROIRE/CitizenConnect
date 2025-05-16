@@ -10,9 +10,9 @@ import RegisterPage from "./components/pages/public/RegisterPage"
 
 // Citizen Pages
 import CitizenDashboard from "./components/pages/citizen/CitizenDashboard.jsx"
-// import SubmitComplaint from "./pages/citizen/SubmitComplaint"
-// import MyComplaints from "./pages/citizen/MyComplaints"
-// import ComplaintDetails from "./pages/citizen/ComplaintDetails"
+import SubmitComplaint from "./components/pages/citizen/SubmitComplaints.jsx"
+import MyComplaints from "./components/pages/citizen/MyComplaints.jsx"
+import ComplaintDetails from "./components/pages/citizen/ComplaintsDetails.jsx"
 
 // Institution Pages
 // import InstitutionDashboard from "./pages/institution/InstitutionDashboard"
@@ -72,8 +72,7 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
-
-              {/* Citizen Routes */}
+{/* Citizen Routes */}
               <Route
                 path="/citizen/dashboard"
                 element={
@@ -82,7 +81,30 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-             
+              <Route
+                path="/citizen/submit-complaint"
+                element={
+                  <ProtectedRoute allowedRoles={["citizen"]}>
+                    <SubmitComplaint />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/citizen/my-complaints"
+                element={
+                  <ProtectedRoute allowedRoles={["citizen"]}>
+                    <MyComplaints />
+                  </ProtectedRoute>
+                }
+              />
+                 <Route
+                path="/citizen/complaint/:id"
+                element={
+                  <ProtectedRoute allowedRoles={["citizen"]}>
+                    <ComplaintDetails />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Fallback Route */}
               <Route path="*" element={<Navigate to="/" />} />

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, Link } from "react-router-dom"
 import styled from "styled-components"
-import api from "../../services/api"
+import api from "../../../Services/api"
 
 const PageContainer = styled.div`
   max-width: 800px;
