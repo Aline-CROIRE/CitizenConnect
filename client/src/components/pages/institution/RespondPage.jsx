@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, Link } from "react-router-dom"
+import { useParams, useNavigate, Link } from "react-router-dom"
 import styled from "styled-components"
 import api from "../../../Services/api"
+import { useAuth } from "../../../context/AuthContext"
 
 const PageContainer = styled.div`
   max-width: 800px;
@@ -136,109 +137,6 @@ const ComplaintImage = styled.div`
   }
 `
 
-const TimelineCard = styled.div`
-  background-color: white;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-`
-
-const TimelineTitle = styled.h2`
-  color: var(--primary);
-  margin-bottom: 1.5rem;
-`
-
-const Timeline = styled.div`
-  position: relative;
-  
-  &:before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 16px;
-    width: 2px;
-    background-color: var(--gray-light);
-  }
-`
-
-const TimelineItem = styled.div`
-  position: relative;
-  padding-left: 40px;
-  padding-bottom: 1.5rem;
-  
-  &:last-child {
-    padding-bottom: 0;
-  }
-`
-
-const TimelineDot = styled.div`
-  position: absolute;
-  left: 10px;
-  top: 0;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background-color: ${({ status }) => {
-    switch (status) {
-      case "pending":
-        return "var(--warning)"
-      case "in-progress":
-        return "var(--info)"
-      case "resolved":
-        return "var(--success)"
-      case "rejected":
-        return "var(--danger)"
-      default:
-        return "var(--gray)"
-    }
-  }};
-`
-
-const TimelineContent = styled.div`
-  background-color: var(--neutral-light);
-  padding: 1rem;
-  border-radius: var(--radius);
-`
-
-const TimelineHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-  
-  @media (max-width: 480px) {
-    flex-direction: column;
-  }
-`
-
-const TimelineStatus = styled.span`
-  font-weight: 600;
-  color: ${({ status }) => {
-    switch (status) {
-      case "pending":
-        return "var(--warning)"
-      case "in-progress":
-        return "var(--info)"
-      case "resolved":
-        return "var(--success)"
-      case "rejected":
-        return "var(--danger)"
-      default:
-        return "var(--gray)"
-    }
-  }};
-`
-
-const TimelineDate = styled.span`
-  color: var(--gray);
-  font-size: 0.9rem;
-`
-
-const TimelineText = styled.p`
-  margin: 0;
-`
-
 const ResponsesCard = styled.div`
   background-color: white;
   border-radius: var(--radius-lg);
@@ -262,7 +160,6 @@ const Response = styled.div`
     margin-bottom: 0;
   }
 `
-
 
 const ResponseHeader = styled.div`
   display: flex;
@@ -288,6 +185,98 @@ const ResponseText = styled.p`
   margin: 0;
 `
 
+const RespondForm = styled.div`
+  background-color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+`
+
+const FormTitle = styled.h2`
+  color: var(--primary);
+  margin-bottom: 1.5rem;
+`
+
+const FormGroup = styled.div`
+  margin-bottom: 1.5rem;
+`
+
+const Label = styled.label`
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+`
+
+const Textarea = styled.textarea`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--gray-light);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  min-height: 150px;
+  resize: vertical;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+`
+
+const Select = styled.select`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--gray-light);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  background-color: white;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+`
+
+const ButtonGroup = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+`
+
+const Button = styled.button`
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const SubmitButton = styled(Button)`
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  
+  &:hover {
+    background-color: var(--primary-light);
+  }
+`
+
+const CancelButton = styled(Button)`
+  background-color: white;
+  color: var(--neutral-dark);
+  border: 1px solid var(--gray-light);
+  
+  &:hover {
+    background-color: var(--neutral-light);
+  }
+`
+
 const EmptyState = styled.div`
   text-align: center;
   padding: 2rem;
@@ -300,11 +289,39 @@ const LoadingState = styled.div`
   color: var(--gray);
 `
 
-const ComplaintDetails = () => {
+const SuccessMessage = styled.div`
+  background-color: rgba(56, 161, 105, 0.1);
+  color: var(--success);
+  padding: 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1.5rem;
+  border-left: 4px solid var(--success);
+`
+
+const ErrorMessage = styled.div`
+  background-color: rgba(229, 62, 62, 0.1);
+  color: var(--accent);
+  padding: 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1.5rem;
+  border-left: 4px solid var(--accent);
+`
+
+const RespondPage = () => {
   const { id } = useParams()
+  const navigate = useNavigate()
+  const { user } = useAuth()
+
   const [complaint, setComplaint] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(null)
+  const [formData, setFormData] = useState({
+    message: "",
+    status: "",
+    comment: "",
+  })
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     const fetchComplaintDetails = async () => {
@@ -312,7 +329,13 @@ const ComplaintDetails = () => {
         setLoading(true)
 
         const response = await api.get(`/api/complaints/${id}`)
-        setComplaint(response.data)
+        setComplaint(response.data.data)
+
+        // Set initial status to current complaint status
+        setFormData((prev) => ({
+          ...prev,
+          status: response.data.data.status,
+        }))
       } catch (err) {
         console.error("Error fetching complaint details:", err)
         setError("Failed to load complaint details. Please try again.")
@@ -323,6 +346,69 @@ const ComplaintDetails = () => {
 
     fetchComplaintDetails()
   }, [id])
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData({
+      ...formData,
+      [name]: value,
+    })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!formData.message.trim()) {
+      setError("Please enter a response message")
+      return
+    }
+
+    if (formData.status !== complaint.status && !formData.comment.trim()) {
+      setError("Please provide a comment for the status change")
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      setError(null)
+
+      // Add response
+      await api.post(`/api/complaints/${id}/responses`, {
+        message: formData.message,
+      })
+
+      // Update status if changed
+      if (formData.status !== complaint.status) {
+        await api.put(`/api/complaints/${id}/status`, {
+          status: formData.status,
+          comment: formData.comment,
+        })
+      }
+
+      // Refresh complaint data
+      const response = await api.get(`/api/complaints/${id}`)
+      setComplaint(response.data.data)
+
+      // Reset form
+      setFormData({
+        message: "",
+        status: response.data.data.status,
+        comment: "",
+      })
+
+      setSuccess("Response submitted successfully")
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccess(null)
+      }, 3000)
+    } catch (err) {
+      console.error("Error submitting response:", err)
+      setError(err.response?.data?.message || "Failed to submit response. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)
@@ -337,10 +423,11 @@ const ComplaintDetails = () => {
     )
   }
 
-  if (error) {
+  if (error && !complaint) {
     return (
       <PageContainer>
-        <EmptyState>{error}</EmptyState>
+        <ErrorMessage>{error}</ErrorMessage>
+        <BackLink to="/institution/complaints">Back to Complaints</BackLink>
       </PageContainer>
     )
   }
@@ -349,13 +436,14 @@ const ComplaintDetails = () => {
     return (
       <PageContainer>
         <EmptyState>Complaint not found</EmptyState>
+        <BackLink to="/institution/complaints">Back to Complaints</BackLink>
       </PageContainer>
     )
   }
 
   return (
     <PageContainer>
-      <BackLink to="/citizen/my-complaints">Back to My Complaints</BackLink>
+      <BackLink to="/institution/complaints">Back to Complaints</BackLink>
 
       <ComplaintCard>
         <ComplaintHeader>
@@ -383,8 +471,8 @@ const ComplaintDetails = () => {
             </MetaItem>
 
             <MetaItem>
-              <MetaLabel>Location</MetaLabel>
-              <MetaValue>{complaint.location ? complaint.location.name : "Not specified"}</MetaValue>
+              <MetaLabel>Submitted By</MetaLabel>
+              <MetaValue>{complaint.citizen.name}</MetaValue>
             </MetaItem>
           </ComplaintMeta>
 
@@ -402,29 +490,8 @@ const ComplaintDetails = () => {
         </ComplaintBody>
       </ComplaintCard>
 
-      <TimelineCard>
-        <TimelineTitle>Status Timeline</TimelineTitle>
-
-        <Timeline>
-          {complaint.statusHistory.map((status, index) => (
-            <TimelineItem key={index}>
-              <TimelineDot status={status.status} />
-              <TimelineContent>
-                <TimelineHeader>
-                  <TimelineStatus status={status.status}>
-                    {status.status.charAt(0).toUpperCase() + status.status.slice(1)}
-                  </TimelineStatus>
-                  <TimelineDate>{formatDate(status.timestamp)}</TimelineDate>
-                </TimelineHeader>
-                <TimelineText>{status.comment || `Complaint marked as ${status.status}`}</TimelineText>
-              </TimelineContent>
-            </TimelineItem>
-          ))}
-        </Timeline>
-      </TimelineCard>
-
       <ResponsesCard>
-        <ResponsesTitle>Responses</ResponsesTitle>
+        <ResponsesTitle>Previous Responses</ResponsesTitle>
 
         {complaint.responses && complaint.responses.length > 0 ? (
           complaint.responses.map((response, index) => (
@@ -442,8 +509,62 @@ const ComplaintDetails = () => {
           <EmptyState>No responses yet</EmptyState>
         )}
       </ResponsesCard>
+
+      <RespondForm>
+        <FormTitle>Respond to Complaint</FormTitle>
+
+        {success && <SuccessMessage>{success}</SuccessMessage>}
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+
+        <form onSubmit={handleSubmit}>
+          <FormGroup>
+            <Label htmlFor="message">Response Message*</Label>
+            <Textarea
+              id="message"
+              name="message"
+              value={formData.message}
+              onChange={handleInputChange}
+              placeholder="Enter your response to the citizen"
+              required
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <Label htmlFor="status">Update Status</Label>
+            <Select id="status" name="status" value={formData.status} onChange={handleInputChange}>
+              <option value="pending">Pending</option>
+              <option value="in-progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+              <option value="rejected">Rejected</option>
+            </Select>
+          </FormGroup>
+
+          {formData.status !== complaint.status && (
+            <FormGroup>
+              <Label htmlFor="comment">Status Change Comment*</Label>
+              <Textarea
+                id="comment"
+                name="comment"
+                value={formData.comment}
+                onChange={handleInputChange}
+                placeholder="Provide a reason for changing the status"
+                required
+              />
+            </FormGroup>
+          )}
+
+          <ButtonGroup>
+            <CancelButton type="button" onClick={() => navigate("/institution/complaints")}>
+              Cancel
+            </CancelButton>
+            <SubmitButton type="submit" disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit Response"}
+            </SubmitButton>
+          </ButtonGroup>
+        </form>
+      </RespondForm>
     </PageContainer>
   )
 }
 
-export default ComplaintDetails
+export default RespondPage
