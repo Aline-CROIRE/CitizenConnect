@@ -4,9 +4,9 @@ import { AuthProvider, useAuth } from "./context/AuthContext"
 import styled from "styled-components"
 
 // Public Pages
-import HomePage from "./components/pages/public/HomePage"
-import LoginPage from "./components/pages/public/LoginPage"
-import RegisterPage from "./components/pages/public/RegisterPage"
+import HomePage from "./components/pages/public/HomePage.jsx"
+import LoginPage from "./components/pages/public/LoginPage.jsx"
+import RegisterPage from "./components/pages/public/RegisterPage.jsx"
 
 // Citizen Pages
 import CitizenDashboard from "./components/pages/citizen/CitizenDashboard.jsx"
@@ -15,22 +15,23 @@ import MyComplaints from "./components/pages/citizen/MyComplaints.jsx"
 import ComplaintDetails from "./components/pages/citizen/ComplaintsDetails.jsx"
 
 // Institution Pages
-// import InstitutionDashboard from "./pages/institution/InstitutionDashboard"
-// import IncomingComplaints from "./pages/institution/IncomingComplaints"
-// import RespondPage from "./pages/institution/RespondPage"
-// import InstitutionProfile from "./pages/institution/InstitutionProfile"
+import InstitutionDashboard from "./components/pages/institution/InsititutionDashboard.jsx"
+import IncomingComplaints from "./components/pages/institution/IcomingComplaints.jsx"
+import RespondPage from "./components/pages/institution/RespondPage"
+import InstitutionProfile from "./components/pages/institution/InstitutionProfile"
 
 // Admin Pages
-// import AdminDashboard from "./pages/admin/AdminDashboard"
-// import ComplaintsMonitor from "./pages/admin/ComplaintsMonitor"
-// import ManageUsers from "./pages/admin/ManageUsers"
-// import ManageCategories from "./pages/admin/ManageCategories"
-// import Analytics from "./pages/admin/Analytics"
+import AdminDashboard from "./components/pages/admin/AdminDashboard"
+import ComplaintsMonitor from "./components/pages/admin/ComplaintsMonitor"
+import ManageUsers from "./components/pages/admin/ManageUser.jsx"
+import ManageCategories from "./components/pages/admin/ManageCategories"
+import Analytics from "./components/pages/admin/Analytics"
+import ComplaintDetail from "./components/pages/admin/ComplaintsDetails.jsx"
 
 // Components
 import Navbar from "./components/common/Navbar"
 import Footer from "./components/common/Footer"
-import GlobalStyle from "./styles/GlobalStyles"
+import GlobalStyle from "./styles/GlobalStyles.js"
 
 const AppContainer = styled.div`
   display: flex;
@@ -72,7 +73,8 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
-{/* Citizen Routes */}
+
+              {/* Citizen Routes */}
               <Route
                 path="/citizen/dashboard"
                 element={
@@ -97,11 +99,95 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-                 <Route
+              <Route
                 path="/citizen/complaint/:id"
                 element={
                   <ProtectedRoute allowedRoles={["citizen"]}>
                     <ComplaintDetails />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Institution Routes */}
+              <Route
+                path="/institution/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={["institution"]}>
+                    <InstitutionDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/institution/complaints"
+                element={
+                  <ProtectedRoute allowedRoles={["institution"]}>
+                    <IncomingComplaints />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/institution/respond/:id"
+                element={
+                  <ProtectedRoute allowedRoles={["institution"]}>
+                    <RespondPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/institution/profile"
+                element={
+                  <ProtectedRoute allowedRoles={["institution"]}>
+                    <InstitutionProfile />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Admin Routes */}
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/complaints"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <ComplaintsMonitor />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <ManageUsers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/categories"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <ManageCategories />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/analytics"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Analytics />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/complaints/:id"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <ComplaintDetail />
                   </ProtectedRoute>
                 }
               />

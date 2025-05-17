@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, Link } from "react-router-dom"
+import { useParams, useNavigate, Link } from "react-router-dom"
 import styled from "styled-components"
 import api from "../../../Services/api"
+import { useAuth } from "../../../context/AuthContext"
 
 const PageContainer = styled.div`
   max-width: 800px;
@@ -263,7 +264,6 @@ const Response = styled.div`
   }
 `
 
-
 const ResponseHeader = styled.div`
   display: flex;
   justify-content: space-between;
@@ -288,6 +288,98 @@ const ResponseText = styled.p`
   margin: 0;
 `
 
+const AdminActionsCard = styled.div`
+  background-color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+`
+
+const AdminActionsTitle = styled.h2`
+  color: var(--primary);
+  margin-bottom: 1.5rem;
+`
+
+const FormGroup = styled.div`
+  margin-bottom: 1.5rem;
+`
+
+const Label = styled.label`
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+`
+
+const Select = styled.select`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--gray-light);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  background-color: white;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+`
+
+const Textarea = styled.textarea`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--gray-light);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  min-height: 100px;
+  resize: vertical;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+`
+
+const ButtonGroup = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+`
+
+const Button = styled.button`
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const SubmitButton = styled(Button)`
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  
+  &:hover {
+    background-color: var(--primary-light);
+  }
+`
+
+const CancelButton = styled(Button)`
+  background-color: white;
+  color: var(--neutral-dark);
+  border: 1px solid var(--gray-light);
+  
+  &:hover {
+    background-color: var(--neutral-light);
+  }
+`
+
 const EmptyState = styled.div`
   text-align: center;
   padding: 2rem;
@@ -300,29 +392,141 @@ const LoadingState = styled.div`
   color: var(--gray);
 `
 
-const ComplaintDetails = () => {
+const SuccessMessage = styled.div`
+  background-color: rgba(56, 161, 105, 0.1);
+  color: var(--success);
+  padding: 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1.5rem;
+  border-left: 4px solid var(--success);
+`
+
+const ErrorMessage = styled.div`
+  background-color: rgba(229, 62, 62, 0.1);
+  color: var(--accent);
+  padding: 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1.5rem;
+  border-left: 4px solid var(--accent);
+`
+
+const ComplaintDetail = () => {
   const { id } = useParams()
+  const navigate = useNavigate()
+  const { user } = useAuth()
+
   const [complaint, setComplaint] = useState(null)
+  const [institutions, setInstitutions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(null)
+  const [formData, setFormData] = useState({
+    assignedTo: "",
+    status: "",
+    comment: "",
+    message: "",
+  })
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    const fetchComplaintDetails = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true)
 
-        const response = await api.get(`/api/complaints/${id}`)
-        setComplaint(response.data)
+        // Fetch complaint details
+        const complaintResponse = await api.get(`/api/complaints/${id}`)
+        setComplaint(complaintResponse.data.data)
+
+        // Set initial form data
+        setFormData({
+          assignedTo: complaintResponse.data.data.assignedTo?._id || "",
+          status: complaintResponse.data.data.status,
+          comment: "",
+          message: "",
+        })
+
+        // Fetch institutions
+        const institutionsResponse = await api.get("/api/users?role=institution&approvalStatus=approved")
+        setInstitutions(institutionsResponse.data.data)
       } catch (err) {
-        console.error("Error fetching complaint details:", err)
+        console.error("Error fetching data:", err)
         setError("Failed to load complaint details. Please try again.")
       } finally {
         setLoading(false)
       }
     }
 
-    fetchComplaintDetails()
+    fetchData()
   }, [id])
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData({
+      ...formData,
+      [name]: value,
+    })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    try {
+      setSubmitting(true)
+      setError(null)
+
+      // Update assigned institution if changed
+      if (formData.assignedTo !== (complaint.assignedTo?._id || "")) {
+        await api.put(`/api/complaints/${id}/assign`, {
+          institutionId: formData.assignedTo || null,
+        })
+      }
+
+      // Update status if changed
+      if (formData.status !== complaint.status) {
+        if (!formData.comment.trim()) {
+          setError("Please provide a comment for the status change")
+          setSubmitting(false)
+          return
+        }
+
+        await api.put(`/api/complaints/${id}/status`, {
+          status: formData.status,
+          comment: formData.comment,
+        })
+      }
+
+      // Add admin response if provided
+      if (formData.message.trim()) {
+        await api.post(`/api/complaints/${id}/responses`, {
+          message: formData.message,
+        })
+      }
+
+      // Refresh complaint data
+      const response = await api.get(`/api/complaints/${id}`)
+      setComplaint(response.data.data)
+
+      // Reset form
+      setFormData({
+        assignedTo: response.data.data.assignedTo?._id || "",
+        status: response.data.data.status,
+        comment: "",
+        message: "",
+      })
+
+      setSuccess("Complaint updated successfully")
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccess(null)
+      }, 3000)
+    } catch (err) {
+      console.error("Error updating complaint:", err)
+      setError(err.response?.data?.message || "Failed to update complaint. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)
@@ -337,10 +541,11 @@ const ComplaintDetails = () => {
     )
   }
 
-  if (error) {
+  if (error && !complaint) {
     return (
       <PageContainer>
-        <EmptyState>{error}</EmptyState>
+        <ErrorMessage>{error}</ErrorMessage>
+        <BackLink to="/admin/complaints">Back to Complaints</BackLink>
       </PageContainer>
     )
   }
@@ -349,13 +554,14 @@ const ComplaintDetails = () => {
     return (
       <PageContainer>
         <EmptyState>Complaint not found</EmptyState>
+        <BackLink to="/admin/complaints">Back to Complaints</BackLink>
       </PageContainer>
     )
   }
 
   return (
     <PageContainer>
-      <BackLink to="/citizen/my-complaints">Back to My Complaints</BackLink>
+      <BackLink to="/admin/complaints">Back to Complaints</BackLink>
 
       <ComplaintCard>
         <ComplaintHeader>
@@ -383,6 +589,20 @@ const ComplaintDetails = () => {
             </MetaItem>
 
             <MetaItem>
+              <MetaLabel>Submitted By</MetaLabel>
+              <MetaValue>{complaint.citizen.name}</MetaValue>
+            </MetaItem>
+
+            <MetaItem>
+              <MetaLabel>Assigned To</MetaLabel>
+              <MetaValue>
+                {complaint.assignedTo
+                  ? `${complaint.assignedTo.name} (${complaint.assignedTo.department})`
+                  : "Not Assigned"}
+              </MetaValue>
+            </MetaItem>
+
+            <MetaItem>
               <MetaLabel>Location</MetaLabel>
               <MetaValue>{complaint.location ? complaint.location.name : "Not specified"}</MetaValue>
             </MetaItem>
@@ -401,6 +621,71 @@ const ComplaintDetails = () => {
           )}
         </ComplaintBody>
       </ComplaintCard>
+
+      <AdminActionsCard>
+        <AdminActionsTitle>Admin Actions</AdminActionsTitle>
+
+        {success && <SuccessMessage>{success}</SuccessMessage>}
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+
+        <form onSubmit={handleSubmit}>
+          <FormGroup>
+            <Label htmlFor="assignedTo">Assign to Institution</Label>
+            <Select id="assignedTo" name="assignedTo" value={formData.assignedTo} onChange={handleInputChange}>
+              <option value="">Not Assigned</option>
+              {institutions.map((institution) => (
+                <option key={institution._id} value={institution._id}>
+                  {institution.name} ({institution.department})
+                </option>
+              ))}
+            </Select>
+          </FormGroup>
+
+          <FormGroup>
+            <Label htmlFor="status">Update Status</Label>
+            <Select id="status" name="status" value={formData.status} onChange={handleInputChange}>
+              <option value="pending">Pending</option>
+              <option value="in-progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+              <option value="rejected">Rejected</option>
+            </Select>
+          </FormGroup>
+
+          {formData.status !== complaint.status && (
+            <FormGroup>
+              <Label htmlFor="comment">Status Change Comment*</Label>
+              <Textarea
+                id="comment"
+                name="comment"
+                value={formData.comment}
+                onChange={handleInputChange}
+                placeholder="Provide a reason for changing the status"
+                required={formData.status !== complaint.status}
+              />
+            </FormGroup>
+          )}
+
+          <FormGroup>
+            <Label htmlFor="message">Admin Response</Label>
+            <Textarea
+              id="message"
+              name="message"
+              value={formData.message}
+              onChange={handleInputChange}
+              placeholder="Enter your response to the complaint (optional)"
+            />
+          </FormGroup>
+
+          <ButtonGroup>
+            <CancelButton type="button" onClick={() => navigate("/admin/complaints")}>
+              Cancel
+            </CancelButton>
+            <SubmitButton type="submit" disabled={submitting}>
+              {submitting ? "Updating..." : "Update Complaint"}
+            </SubmitButton>
+          </ButtonGroup>
+        </form>
+      </AdminActionsCard>
 
       <TimelineCard>
         <TimelineTitle>Status Timeline</TimelineTitle>
@@ -431,7 +716,7 @@ const ComplaintDetails = () => {
             <Response key={index}>
               <ResponseHeader>
                 <ResponseFrom>
-                  {response.from.name} ({response.from.department})
+                  {response.from.name} ({response.from.department || "Admin"})
                 </ResponseFrom>
                 <ResponseDate>{formatDate(response.createdAt)}</ResponseDate>
               </ResponseHeader>
@@ -446,4 +731,4 @@ const ComplaintDetails = () => {
   )
 }
 
-export default ComplaintDetails
+export default ComplaintDetail
