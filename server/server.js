@@ -1,29 +1,29 @@
-const express = require("express")
-const mongoose = require("mongoose")
-const cors = require("cors")
-const path = require("path")
-const dotenv = require("dotenv")
-const morgan = require("morgan")
-const helmet = require("helmet")
-const rateLimit = require("express-rate-limit")
-const mongoSanitize = require("express-mongo-sanitize")
-const xss = require("xss-clean")
-const multer = require("multer")
-const fs = require("fs")
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const path = require("path");
+const dotenv = require("dotenv");
+const morgan = require("morgan");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const mongoSanitize = require("express-mongo-sanitize");
+const xss = require("xss-clean");
+const multer = require("multer");
+const fs = require("fs");
 
 // Load environment variables
-dotenv.config()
+dotenv.config();
 
 // Import routes
-const authRoutes = require("./routes/auth")
-const userRoutes = require("./routes/users")
-const complaintRoutes = require("./routes/complaints")
-const categoryRoutes = require("./routes/categories")
-const locationRoutes = require("./routes/locations")
-const dashboardRoutes = require("./routes/dashboard")
+const authRoutes = require("./routes/auth");
+const userRoutes = require("./routes/users");
+const complaintRoutes = require("./routes/complaints");
+const categoryRoutes = require("./routes/categories");
+const locationRoutes = require("./routes/locations");
+const dashboardRoutes = require("./routes/dashboard");
 
 // Initialize Express app
-const app = express()
+const app = express();
 
 // Connect to MongoDB
 mongoose
@@ -32,14 +32,19 @@ mongoose
     useUnifiedTopology: true,
   })
   .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 // Middleware
-app.use(cors())
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-app.use(morgan("dev"))
-app.use(helmet())
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan("dev"));
+app.use(helmet());
 
 // Configure file upload middleware
 const uploadsDir = path.join(__dirname, "uploads");
@@ -53,59 +58,56 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: "Too many requests from this IP, please try again later",
-})
-app.use("/api/", limiter)
+});
+app.use("/api/", limiter);
 
-// Data sanitization against NoSQL query injection
-app.use(mongoSanitize())
+// Data sanitization
+app.use(mongoSanitize());
+app.use(xss());
 
-// Data sanitization against XSS
-app.use(xss())
-
-// Set static folder
-app.use("/uploads", express.static(uploadsDir))
+// Set static folder for uploads
+app.use("/uploads", express.static(uploadsDir));
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
     message: "API is running",
-    timestamp: new Date().toISOString()
-  })
-})
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // API routes
-app.use("/api/auth", authRoutes)
-app.use("/api/users", userRoutes)
-app.use("/api/complaints", complaintRoutes)
-app.use("/api/categories", categoryRoutes)
-app.use("/api/locations", locationRoutes)
-app.use("/api/dashboard", dashboardRoutes)
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/complaints", complaintRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/locations", locationRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Serve static assets in production
 if (process.env.NODE_ENV === "production") {
-  // Set static folder
-  app.use(express.static(path.join(__dirname, "../frontend/build")))
+  app.use(express.static(path.join(__dirname, "../frontend/build")));
 
   app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "../frontend/build", "index.html"))
-  })
+    res.sendFile(path.resolve(__dirname, "../frontend/build", "index.html"));
+  });
 }
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack)
+  console.error(err.stack);
 
-  const statusCode = err.statusCode || 500
-  const message = err.message || "Internal Server Error"
+  const statusCode = err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
 
   res.status(statusCode).json({
     success: false,
     error: message,
     stack: process.env.NODE_ENV === "production" ? "🥞" : err.stack,
-  })
-})
+  });
+});
 
 // Start server
-const PORT = process.env.PORT || 5000
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

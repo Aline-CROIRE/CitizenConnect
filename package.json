@@ -1,6 +1,30 @@
 {
+  "name": "citizen-connect",
+  "version": "1.0.0",
+  "description": "A platform for citizens to submit complaints to government institutions",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "build": "cd client && npm install && npm run build",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm start",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "citizen",
+    "complaints",
+    "government",
+    "public service"
+  ],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "express-rate-limit": "^7.5.0",
-    "helmet": "^8.1.0"
+    "helmet": "^8.1.0",
+    "concurrently": "^9.1.2"
   }
 }
