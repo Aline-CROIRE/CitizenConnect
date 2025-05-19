@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
 import styled from "styled-components"
-import api from "../../../Services/api"
+import api from "../../../services/api"
 import { useAuth } from "../../../context/AuthContext"
 
 const PageContainer = styled.div`

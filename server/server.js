@@ -8,6 +8,8 @@ const helmet = require("helmet")
 const rateLimit = require("express-rate-limit")
 const mongoSanitize = require("express-mongo-sanitize")
 const xss = require("xss-clean")
+const multer = require("multer")
+const fs = require("fs")
 
 // Load environment variables
 dotenv.config()
@@ -39,6 +41,13 @@ app.use(express.urlencoded({ extended: true }))
 app.use(morgan("dev"))
 app.use(helmet())
 
+// Configure file upload middleware
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log("Created uploads directory");
+}
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -54,7 +63,16 @@ app.use(mongoSanitize())
 app.use(xss())
 
 // Set static folder
-app.use("/uploads", express.static(path.join(__dirname, "uploads")))
+app.use("/uploads", express.static(uploadsDir))
+
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "API is running",
+    timestamp: new Date().toISOString()
+  })
+})
 
 // API routes
 app.use("/api/auth", authRoutes)

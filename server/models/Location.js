@@ -1,21 +1,25 @@
 const mongoose = require("mongoose")
 
 const LocationSchema = new mongoose.Schema({
-  name: {
+  province: {
     type: String,
-    required: [true, "Please provide a location name"],
-    trim: true,
-    unique: true,
-    maxlength: [100, "Location name cannot be more than 100 characters"],
+    required: [true, "Please add a province"],
   },
-  type: {
+  district: {
     type: String,
-    enum: ["city", "district", "neighborhood", "other"],
-    default: "city",
+    required: [true, "Please add a district"],
   },
-  isActive: {
-    type: Boolean,
-    default: true,
+  sector: {
+    type: String,
+    required: [true, "Please add a sector"],
+  },
+  cell: {
+    type: String,
+    required: [true, "Please add a cell"],
+  },
+  village: {
+    type: String,
+    required: [true, "Please add a village"],
   },
   createdAt: {
     type: Date,
