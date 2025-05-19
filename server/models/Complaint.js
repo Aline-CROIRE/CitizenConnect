@@ -21,14 +21,34 @@ const ComplaintSchema = new mongoose.Schema({
     ref: "Category",
     required: [true, "Please select a category"],
   },
-  location: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Location",
+  // Rwanda-specific location fields
+  province: {
+    type: String,
+    required: [true, "Please select a province"],
+  },
+  district: {
+    type: String,
+    required: [true, "Please select a district"],
+  },
+  sector: {
+    type: String,
+    required: [true, "Please select a sector"],
+  },
+  cell: {
+    type: String,
+  },
+  village: {
+    type: String,
   },
   status: {
     type: String,
     enum: ["pending", "in-progress", "resolved", "rejected"],
     default: "pending",
+  },
+  priority: {
+    type: String,
+    enum: ["low", "medium", "high"],
+    default: "medium",
   },
   citizen: {
     type: mongoose.Schema.Types.ObjectId,
@@ -41,6 +61,14 @@ const ComplaintSchema = new mongoose.Schema({
   },
   imageUrl: {
     type: String,
+  },
+  nationalId: {
+    type: String,
+    match: [/^\d{16}$/, "Please provide a valid 16-digit National ID number"],
+  },
+  phone: {
+    type: String,
+    match: [/^(\+?250|0)?7[2389]\d{7}$/, "Please provide a valid Rwandan phone number"],
   },
   statusHistory: [
     {

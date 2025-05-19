@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import styled from "styled-components"
-import api from "../../../Services/api"
+import api from "../../../services/api"
 
 const PageContainer = styled.div`
   max-width: 1200px;
@@ -418,13 +418,21 @@ const ManageUsers = () => {
   const handleConfirmAction = async () => {
     try {
       if (modalAction === "approve") {
+        // Send approval notification to the user
         await api.put(`/api/users/${selectedUser._id}/approval`, {
           approvalStatus: "approved",
+          notifyUser: true,
+          message: "Your account has been approved. You can now log in to the system."
         })
       } else if (modalAction === "reject") {
+        // Get the rejection reason from the modal
+        const rejectionReason = document.getElementById("rejectionReason")?.value || "Rejected by administrator"
+        
         await api.put(`/api/users/${selectedUser._id}/approval`, {
           approvalStatus: "rejected",
-          rejectionReason: "Rejected by administrator",
+          rejectionReason: rejectionReason,
+          notifyUser: true,
+          message: `Your account registration has been rejected. Reason: ${rejectionReason}`
         })
       } else if (modalAction === "delete") {
         await api.delete(`/api/users/${selectedUser._id}`)
@@ -595,6 +603,25 @@ const ManageUsers = () => {
                   ? `Are you sure you want to reject ${selectedUser.name}?`
                   : `Are you sure you want to delete ${selectedUser.name}? This action cannot be undone.`}
             </p>
+
+            {modalAction === "reject" && (
+              <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
+                <label htmlFor="rejectionReason" style={{ display: "block", marginBottom: "0.5rem" }}>
+                  Rejection Reason:
+                </label>
+                <textarea
+                  id="rejectionReason"
+                  rows="3"
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem",
+                    borderRadius: "var(--radius)",
+                    border: "1px solid var(--gray-light)"
+                  }}
+                  placeholder="Please provide a reason for rejection"
+                />
+              </div>
+            )}
 
             <ModalButtons>
               <CancelButton onClick={() => setShowModal(false)}>Cancel</CancelButton>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, Link } from "react-router-dom"
 import styled from "styled-components"
-import api from "../../../Services/api"
+import api from "../../../services/api"
 
 const PageContainer = styled.div`
   max-width: 800px;
@@ -61,8 +61,8 @@ const StatusBadge = styled.span`
   border-radius: var(--radius);
   font-size: 0.9rem;
   font-weight: 600;
-  background-color: ${({ status }) => {
-    switch (status) {
+  background-color: ${({ $status }) => {
+    switch ($status) {
       case "pending":
         return "rgba(236, 201, 75, 0.2)"
       case "in-progress":
@@ -75,8 +75,8 @@ const StatusBadge = styled.span`
         return "rgba(113, 128, 150, 0.2)"
     }
   }};
-  color: ${({ status }) => {
-    switch (status) {
+  color: ${({ $status }) => {
+    switch ($status) {
       case "pending":
         return "var(--warning)"
       case "in-progress":
@@ -180,8 +180,8 @@ const TimelineDot = styled.div`
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background-color: ${({ status }) => {
-    switch (status) {
+  background-color: ${({ $status }) => {
+    switch ($status) {
       case "pending":
         return "var(--warning)"
       case "in-progress":
@@ -214,8 +214,8 @@ const TimelineHeader = styled.div`
 
 const TimelineStatus = styled.span`
   font-weight: 600;
-  color: ${({ status }) => {
-    switch (status) {
+  color: ${({ $status }) => {
+    switch ($status) {
       case "pending":
         return "var(--warning)"
       case "in-progress":
@@ -312,7 +312,9 @@ const ComplaintDetails = () => {
         setLoading(true)
 
         const response = await api.get(`/api/complaints/${id}`)
-        setComplaint(response.data)
+        // The API returns data in response.data.data
+        setComplaint(response.data.data)
+        console.log("Complaint data:", response.data.data)
       } catch (err) {
         console.error("Error fetching complaint details:", err)
         setError("Failed to load complaint details. Please try again.")
@@ -360,8 +362,8 @@ const ComplaintDetails = () => {
       <ComplaintCard>
         <ComplaintHeader>
           <ComplaintTitle>{complaint.title}</ComplaintTitle>
-          <StatusBadge status={complaint.status}>
-            {complaint.status.charAt(0).toUpperCase() + complaint.status.slice(1)}
+          <StatusBadge $status={complaint.status || "pending"}>
+            {complaint.status ? complaint.status.charAt(0).toUpperCase() + complaint.status.slice(1) : "Pending"}
           </StatusBadge>
         </ComplaintHeader>
 
@@ -379,12 +381,16 @@ const ComplaintDetails = () => {
 
             <MetaItem>
               <MetaLabel>Category</MetaLabel>
-              <MetaValue>{complaint.category.name}</MetaValue>
+              <MetaValue>{complaint.category && complaint.category.name ? complaint.category.name : "Uncategorized"}</MetaValue>
             </MetaItem>
 
             <MetaItem>
               <MetaLabel>Location</MetaLabel>
-              <MetaValue>{complaint.location ? complaint.location.name : "Not specified"}</MetaValue>
+              <MetaValue>
+                {complaint.province ? 
+                  `${complaint.province}${complaint.district ? `, ${complaint.district}` : ''}${complaint.sector ? `, ${complaint.sector}` : ''}` : 
+                  (complaint.location && complaint.location.name ? complaint.location.name : "Not specified")}
+              </MetaValue>
             </MetaItem>
           </ComplaintMeta>
 
@@ -406,17 +412,17 @@ const ComplaintDetails = () => {
         <TimelineTitle>Status Timeline</TimelineTitle>
 
         <Timeline>
-          {complaint.statusHistory.map((status, index) => (
+          {complaint.statusHistory && complaint.statusHistory.map((status, index) => (
             <TimelineItem key={index}>
-              <TimelineDot status={status.status} />
+              <TimelineDot $status={status.status || "pending"} />
               <TimelineContent>
                 <TimelineHeader>
-                  <TimelineStatus status={status.status}>
-                    {status.status.charAt(0).toUpperCase() + status.status.slice(1)}
+                  <TimelineStatus $status={status.status || "pending"}>
+                    {status.status ? status.status.charAt(0).toUpperCase() + status.status.slice(1) : "Pending"}
                   </TimelineStatus>
                   <TimelineDate>{formatDate(status.timestamp)}</TimelineDate>
                 </TimelineHeader>
-                <TimelineText>{status.comment || `Complaint marked as ${status.status}`}</TimelineText>
+                <TimelineText>{status.comment || `Complaint marked as ${status.status || "pending"}`}</TimelineText>
               </TimelineContent>
             </TimelineItem>
           ))}
@@ -431,11 +437,13 @@ const ComplaintDetails = () => {
             <Response key={index}>
               <ResponseHeader>
                 <ResponseFrom>
-                  {response.from.name} ({response.from.department})
+                  {response.from && response.from.name ? 
+                    `${response.from.name} ${response.from.department ? `(${response.from.department})` : ''}` : 
+                    'Unknown'}
                 </ResponseFrom>
                 <ResponseDate>{formatDate(response.createdAt)}</ResponseDate>
               </ResponseHeader>
-              <ResponseText>{response.message}</ResponseText>
+              <ResponseText>{response.message || ''}</ResponseText>
             </Response>
           ))
         ) : (

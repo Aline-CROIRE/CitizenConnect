@@ -311,9 +311,9 @@ const HomePage = () => {
               submitting my complaint, it was fixed! This platform really works."
             </TestimonialText>
             <TestimonialAuthor>
-              <TestimonialAvatar>JD</TestimonialAvatar>
+              <TestimonialAvatar>KA</TestimonialAvatar>
               <TestimonialInfo>
-                <TestimonialName>John Doe</TestimonialName>
+                <TestimonialName>KIM Aline</TestimonialName>
                 <TestimonialRole>Citizen</TestimonialRole>
               </TestimonialInfo>
             </TestimonialAuthor>
@@ -325,9 +325,9 @@ const HomePage = () => {
               was able to submit my complaint and get a response within days."
             </TestimonialText>
             <TestimonialAuthor>
-              <TestimonialAvatar>MS</TestimonialAvatar>
+              <TestimonialAvatar>MA</TestimonialAvatar>
               <TestimonialInfo>
-                <TestimonialName>Mary Smith</TestimonialName>
+                <TestimonialName>Mary Aline</TestimonialName>
                 <TestimonialRole>Retired Teacher</TestimonialRole>
               </TestimonialInfo>
             </TestimonialAuthor>

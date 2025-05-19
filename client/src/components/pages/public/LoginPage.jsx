@@ -1,89 +1,37 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import styled from "styled-components"
 import { useAuth } from "../../../context/AuthContext"
+import { useLanguage } from "../../../context/LanguageContext"
+import styled from "styled-components"
 
+// Styled components
 const LoginContainer = styled.div`
-  max-width: 500px;
-  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
   padding: 2rem;
+  background-color: var(--neutral-light, #f5f5f5);
 `
 
-const LoginCard = styled.div`
+const LoginFormContainer = styled.div`
   background-color: white;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-lg, 8px);
+  box-shadow: var(--shadow, 0 4px 6px rgba(0, 0, 0, 0.1));
   padding: 2rem;
+  width: 100%;
+  max-width: 500px;
 `
 
-const LoginTitle = styled.h1`
+const Title = styled.h2`
   text-align: center;
   margin-bottom: 2rem;
-  color: var(--primary);
+  color: var(--primary, #3b82f6);
 `
 
-const LoginForm = styled.form`
-  display: flex;
-  flex-direction: column;
-`
-
-const FormGroup = styled.div`
-  margin-bottom: 1.5rem;
-`
-
-const Label = styled.label`
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-`
-
-const Input = styled.input`
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--gray-light);
-  border-radius: var(--radius);
-  font-size: 1rem;
-  
-  &:focus {
-    outline: none;
-    border-color: var(--primary);
-  }
-`
-
-const LoginButton = styled.button`
-  background-color: var(--primary);
-  color: white;
-  padding: 0.75rem;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-  
-  &:hover {
-    background-color: var(--primary-light);
-  }
-  
-  &:disabled {
-    background-color: var(--gray);
-    cursor: not-allowed;
-  }
-`
-
-const ErrorMessage = styled.div`
-  color: var(--accent);
-  margin-bottom: 1rem;
-  text-align: center;
-`
-
-const RegisterLink = styled.div`
-  text-align: center;
-  margin-top: 1.5rem;
-`
-
+// Use transient prop $active here
 const RoleSelector = styled.div`
   display: flex;
   justify-content: center;
@@ -93,15 +41,85 @@ const RoleSelector = styled.div`
 const RoleButton = styled.button`
   padding: 0.5rem 1rem;
   margin: 0 0.5rem;
-  background-color: ${({ active }) => (active ? "var(--primary)" : "white")};
-  color: ${({ active }) => (active ? "white" : "var(--primary)")};
-  border: 1px solid var(--primary);
-  border-radius: var(--radius);
+  background-color: ${({ $active }) => ($active ? "var(--primary, #3b82f6)" : "white")};
+  color: ${({ $active }) => ($active ? "white" : "var(--primary, #3b82f6)")};
+  border: 1px solid var(--primary, #3b82f6);
+  border-radius: var(--radius, 4px);
   cursor: pointer;
-  transition: var(--transition);
-  
+  transition: all 0.2s ease;
+
   &:hover {
-    background-color: ${({ active }) => (active ? "var(--primary-light)" : "var(--neutral-light)")};
+    background-color: ${({ $active }) => ($active ? "var(--primary-light, #60a5fa)" : "var(--neutral-light, #f5f5f5)")};
+  }
+`
+
+const ErrorMessage = styled.div`
+  color: var(--accent, #ef4444);
+  margin-bottom: 1rem;
+  text-align: center;
+  padding: 0.75rem;
+  background-color: rgba(239, 68, 44, 0.1);
+  border-radius: var(--radius, 4px);
+  border-left: 4px solid var(--accent, #ef4444);
+`
+
+const FormGroup = styled.div`
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--gray-light, #d1d5db);
+    border-radius: var(--radius, 4px);
+    font-size: 1rem;
+
+    &:focus {
+      outline: none;
+      border-color: var(--primary, #3b82f6);
+    }
+  }
+`
+
+const LoginButton = styled.button`
+  width: 100%;
+  background-color: var(--primary, #3b82f6);
+  color: white;
+  padding: 0.75rem;
+  border: none;
+  border-radius: var(--radius, 4px);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: var(--primary-light, #60a5fa);
+  }
+
+  &:disabled {
+    background-color: var(--gray, #9ca3af);
+    cursor: not-allowed;
+  }
+`
+
+const RegisterLink = styled.p`
+  text-align: center;
+  margin-top: 1.5rem;
+
+  a {
+    color: var(--primary, #3b82f6);
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 `
 
@@ -109,43 +127,69 @@ const LoginPage = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [role, setRole] = useState("citizen")
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-
-  const { login } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const { login, isAuthenticated, currentUser } = useAuth()
   const navigate = useNavigate()
+  const { t } = useLanguage()
+
+  // Use ref to prevent multiple redirects and infinite loops
+  const hasRedirected = useRef(false)
+
+  useEffect(() => {
+    if (isAuthenticated && currentUser?.role && !hasRedirected.current) {
+      hasRedirected.current = true
+      redirectBasedOnRole(currentUser.role)
+    }
+  }, [isAuthenticated, currentUser])
+
+  const redirectBasedOnRole = (role) => {
+    switch (role) {
+      case "admin":
+        navigate("/admin/dashboard")
+        break
+      case "institution":
+        navigate("/institution/dashboard")
+        break
+      default:
+        navigate("/citizen/dashboard")
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError("")
+    setLoading(true)
 
     if (!email || !password) {
-      setError("Please fill in all fields")
+      setError(t("login.fillAllFields"))
+      setLoading(false)
       return
     }
 
     try {
-      setLoading(true)
-      setError("")
+      const success = await login(email, password, role)
 
-      const user = await login(email, password)
-
-      // Redirect based on user role
-      if (user.role === "citizen") {
-        navigate("/citizen/dashboard")
-      } else if (user.role === "institution") {
-        if (!user.isApproved) {
-          setError("Your account is pending approval. Please contact the administrator.")
-          setLoading(false)
-          return
-        }
-        navigate("/institution/dashboard")
-      } else if (user.role === "admin") {
-        navigate("/admin/dashboard")
-      } else {
-        navigate("/")
+      if (!success) {
+        setError(t("login.failed"))
       }
+      // Redirect handled in useEffect
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed. Please check your credentials.")
+      console.error("Login error:", err)
+
+      if (err.response && err.response.data) {
+        if (err.response.data.error === "Account pending approval") {
+          setError(t("login.pendingApproval"))
+        } else if (err.response.data.error === "Role mismatch") {
+          setError(t("login.roleMismatch"))
+        } else {
+          setError(err.response.data.message || t("login.failed"))
+        }
+      } else if (err.message) {
+        setError(err.message)
+      } else {
+        setError(t("login.failed"))
+      }
     } finally {
       setLoading(false)
     }
@@ -153,57 +197,57 @@ const LoginPage = () => {
 
   return (
     <LoginContainer>
-      <LoginCard>
-        <LoginTitle>Login to CitizenConnect</LoginTitle>
+      <LoginFormContainer>
+        <Title>{t("login.title")}</Title>
 
         <RoleSelector>
-          <RoleButton type="button" active={role === "citizen"} onClick={() => setRole("citizen")}>
-            Citizen
+          <RoleButton type="button" $active={role === "citizen"} onClick={() => setRole("citizen")}>
+            {t("roles.citizen")}
           </RoleButton>
-          <RoleButton type="button" active={role === "institution"} onClick={() => setRole("institution")}>
-            Institution
+          <RoleButton type="button" $active={role === "institution"} onClick={() => setRole("institution")}>
+            {t("roles.institution")}
           </RoleButton>
-          <RoleButton type="button" active={role === "admin"} onClick={() => setRole("admin")}>
-            Admin
+          <RoleButton type="button" $active={role === "admin"} onClick={() => setRole("admin")}>
+            {t("roles.admin")}
           </RoleButton>
         </RoleSelector>
 
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
-        <LoginForm onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
           <FormGroup>
-            <Label htmlFor="email">Email</Label>
-            <Input
+            <label htmlFor="email">{t("login.email")}</label>
+            <input
               type="email"
               id="email"
+              placeholder={t("login.emailPlaceholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
               required
             />
           </FormGroup>
 
           <FormGroup>
-            <Label htmlFor="password">Password</Label>
-            <Input
+            <label htmlFor="password">{t("login.password")}</label>
+            <input
               type="password"
               id="password"
+              placeholder={t("login.passwordPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
               required
             />
           </FormGroup>
 
           <LoginButton type="submit" disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
+            {loading ? t("login.loggingIn") : t("login.loginButton")}
           </LoginButton>
-        </LoginForm>
+        </form>
 
         <RegisterLink>
-          Don't have an account? <Link to="/register">Register here</Link>
+          {t("login.noAccount")} <Link to="/register">{t("login.registerHere")}</Link>
         </RegisterLink>
-      </LoginCard>
+      </LoginFormContainer>
     </LoginContainer>
   )
 }

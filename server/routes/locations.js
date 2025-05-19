@@ -1,18 +1,20 @@
 const express = require("express")
-const {
-  getLocations,
-  getLocation,
-  createLocation,
-  updateLocation,
-  deleteLocation,
-} = require("../controllers/locations")
-
 const router = express.Router()
+const { getProvinces, getDistricts, getSectors, getCells, getVillages } = require("../controllers/locations")
 
-const { protect } = require("../middleware/auth")
+// Get all provinces
+router.get("/provinces", getProvinces)
 
-router.route("/").get(getLocations).post(protect, createLocation)
+// Get districts by province
+router.get("/districts/:provinceId", getDistricts)
 
-router.route("/:id").get(getLocation).put(protect, updateLocation).delete(protect, deleteLocation)
+// Get sectors by district
+router.get("/sectors/:districtId", getSectors)
+
+// Get cells by sector
+router.get("/cells/:sectorId", getCells)
+
+// Get villages by cell
+router.get("/villages/:cellId", getVillages)
 
 module.exports = router

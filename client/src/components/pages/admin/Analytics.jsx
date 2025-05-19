@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import styled from "styled-components"
-import api from "../../../Services/api"
+import api from "../../../services/api"
 
 const PageContainer = styled.div`
   max-width: 1200px;
